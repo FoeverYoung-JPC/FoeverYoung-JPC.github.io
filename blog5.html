@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jpc.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="MySQL5.7.23的安装1、创建用户和组，指定MySQL所在的用户组 12groupadd mysqluseradd -g mysql mysql -s &#x2F;sbin&#x2F;nologin  2、下载安装包，并解压至&#x2F;user&#x2F;local&#x2F;目录下 123cd &#x2F;opt&#x2F;wget https:&#x2F;&#x2F;mino-yn.oss-cn-qingdao.aliyuncs.com&#x2F;mysql-5.7.23-el7-x">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL的安装与卸载">
+<meta property="og:url" content="https://jpc.github.io/blog5.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="MySQL5.7.23的安装1、创建用户和组，指定MySQL所在的用户组 12groupadd mysqluseradd -g mysql mysql -s &#x2F;sbin&#x2F;nologin  2、下载安装包，并解压至&#x2F;user&#x2F;local&#x2F;目录下 123cd &#x2F;opt&#x2F;wget https:&#x2F;&#x2F;mino-yn.oss-cn-qingdao.aliyuncs.com&#x2F;mysql-5.7.23-el7-x">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-08-13T01:11:42.000Z">
+<meta property="article:modified_time" content="2020-10-15T02:54:13.507Z">
+<meta property="article:author" content="AJINGPC">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="安装部署">
+<meta property="article:tag" content="卸载">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://jpc.github.io/blog5.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL的安装与卸载 | Jing's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jing's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Jing Pengchong</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jpc.github.io/blog5.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="AJINGPC">
+      <meta itemprop="description" content="生活很苦闷，但跑起来就有风。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jing's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL的安装与卸载
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-13 09:11:42" itemprop="dateCreated datePublished" datetime="2020-08-13T09:11:42+08:00">2020-08-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-10-15 10:54:13" itemprop="dateModified" datetime="2020-10-15T10:54:13+08:00">2020-10-15</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/" itemprop="url" rel="index"><span itemprop="name">study</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="MySQL5-7-23的安装"><a href="#MySQL5-7-23的安装" class="headerlink" title="MySQL5.7.23的安装"></a>MySQL5.7.23的安装</h3><p>1、创建用户和组，指定MySQL所在的用户组</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">groupadd mysql</span><br><span class="line">useradd -g mysql mysql -s /sbin/nologin</span><br></pre></td></tr></table></figure>
+
+<p>2、下载安装包，并解压至/user/local/目录下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd /opt/</span><br><span class="line">wget https://mino-yn.oss-cn-qingdao.aliyuncs.com/mysql-5.7.23-el7-x86_64.tar.gz</span><br><span class="line">tar -zxvf mysql-5.7.23-el7-x86_64.tar.gz -C /usr/local/</span><br></pre></td></tr></table></figure>
+
+<p>3、创建软连接，方便操作</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s /usr/local/mysql-5.7.23-el7-x86_64 /usr/local/mysql</span><br></pre></td></tr></table></figure>
+
+<p>4、给MySQL目录授权，创建数据目录并授权</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">chown mysql:mysql -R /usr/local/mysql</span><br><span class="line">mkdir -p /data/mysql </span><br><span class="line">chown mysql:mysql -R /data/mysql</span><br></pre></td></tr></table></figure>
+
+<p>5、编辑配置文件my.cnf</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/my.cnf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">[client]</span><br><span class="line">port                      &#x3D; 3306</span><br><span class="line">socket                    &#x3D; &#x2F;data&#x2F;mysql&#x2F;mysql.sock</span><br><span class="line"></span><br><span class="line">[mysqld]</span><br><span class="line">port                      &#x3D; 3306</span><br><span class="line">socket                    &#x3D; &#x2F;data&#x2F;mysql&#x2F;mysql.sock</span><br><span class="line">pid_file                  &#x3D; &#x2F;data&#x2F;mysql&#x2F;mysql.pid</span><br><span class="line">basedir                   &#x3D; &#x2F;usr&#x2F;local&#x2F;mysql</span><br><span class="line">datadir                   &#x3D; &#x2F;data&#x2F;mysql</span><br><span class="line">character_set_server      &#x3D; utf8</span><br><span class="line"></span><br><span class="line"># LOG</span><br><span class="line">slow_query_log            &#x3D; 1</span><br><span class="line">long_query_time           &#x3D; 5</span><br><span class="line">log_error                 &#x3D; &#x2F;data&#x2F;mysql&#x2F;error.log</span><br><span class="line">slow_query_log_file       &#x3D; &#x2F;data&#x2F;mysql&#x2F;slow.log</span><br><span class="line"></span><br><span class="line"># INNODB</span><br><span class="line">innodb_data_home_dir      &#x3D; &#x2F;data&#x2F;mysql</span><br><span class="line">innodb_buffer_pool_size   &#x3D; 10240M</span><br><span class="line">innodb_log_file_size      &#x3D; 1G</span><br><span class="line">innodb_data_file_path     &#x3D; ibdata1:1G:autoextend</span><br><span class="line"></span><br><span class="line"># OTHER</span><br><span class="line">max_connections           &#x3D; 3000</span><br><span class="line">interactive_timeout       &#x3D; 600</span><br><span class="line">wait_timeout              &#x3D; 600</span><br><span class="line">lower_case_table_names    &#x3D; 1</span><br><span class="line">log_timestamps            &#x3D; SYSTEM</span><br><span class="line">explicit_defaults_for_timestamp &#x3D; 1</span><br><span class="line">skip-ssl</span><br><span class="line">skip-name-resolve</span><br><span class="line"></span><br><span class="line"># REPLICATION</span><br><span class="line">server-id                 &#x3D; 3306100</span><br><span class="line">log-bin                   &#x3D; &#x2F;data&#x2F;mysql&#x2F;mysql-bin</span><br><span class="line">sync_binlog               &#x3D; 0</span><br><span class="line">max_binlog_size           &#x3D; 1024M</span><br><span class="line">binlog-format             &#x3D; row</span><br><span class="line">expire_logs_days          &#x3D; 15</span><br></pre></td></tr></table></figure>
+
+<p>6、初始化数据库</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld --defaults-file=/etc/my.cnf --basedir=/usr/local/mysql --datadir=/data/mysql --user=mysql --initialize</span><br><span class="line"><span class="meta">#</span><span class="bash">如果出现错误信息/usr/<span class="built_in">local</span>/mysql/bin/mysqld: error <span class="keyword">while</span> loading shared libraries: libaio.so.1: cannot open shared object file: No such file or directory</span></span><br><span class="line"><span class="meta">#</span><span class="bash">就先执行yum install libaio*</span></span><br></pre></td></tr></table></figure>
+
+<p>7、启动数据库</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --user=mysql 2&gt;&amp;1 &gt; /dev/null &amp;</span><br></pre></td></tr></table></figure>
+
+<p>8、查看是否启动成功</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef|grep mysqld</span><br></pre></td></tr></table></figure>
+
+<p>9、开放端口号</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --zone=public --add-port=3306/tcp --permanent</span><br><span class="line"><span class="meta">#</span><span class="bash">如果提示FirewallD is not running就无需处理，执行下一步即可</span></span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+
+<p>10、设置开机自启动</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">shell&gt;</span><span class="bash"> <span class="built_in">cd</span> /usr/<span class="built_in">local</span>/mysql/bin</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> cp mysql mysqladmin mysqlbinlog mysqld mysqld_safe mysqldump /usr/bin/</span></span><br><span class="line"></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> vi /usr/<span class="built_in">local</span>/mysql/support-files/mysql.server</span></span><br><span class="line">`mysqld_pid_file_path`=/data/mysql/mysql.pid</span><br><span class="line"></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> cp /usr/<span class="built_in">local</span>/mysql/support-files/mysql.server /etc/init.d/mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chmod +x /etc/init.d/mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig --add mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig mysqld on</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig --list</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 若提示：Note: Forwarding request to <span class="string">&#x27;systemctl enable mysqld.service&#x27;</span>.则为centos7系统，用下面的命令</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> systemctl <span class="built_in">enable</span> mysqld.service</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> systemctl list-unit-files |grep mysql</span></span><br></pre></td></tr></table></figure>
+
+<p>11、查看临时密码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /data/mysql/error.log | grep password</span><br></pre></td></tr></table></figure>
+
+<p>12、进入数据库，“******”是临时密码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -u root -p&#x27;******&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>13、修改root用户密码并设置永不过期</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">mysql&gt;</span><span class="bash"> SET PASSWORD = <span class="string">&#x27;Haier@123&#x27;</span>;</span></span><br><span class="line"><span class="meta">mysql&gt;</span><span class="bash"> ALTER USER <span class="string">&#x27;root&#x27;</span>@<span class="string">&#x27;localhost&#x27;</span> Password EXPIRE NEVER;</span></span><br><span class="line"><span class="meta">mysql&gt;</span><span class="bash"> flush privileges;</span></span><br></pre></td></tr></table></figure>
+
+<p>14、创建用户</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#创建用户src</span><br><span class="line">mysql&gt; CREATE USER &#39;sre&#39;@&#39;%&#39; IDENTIFIED BY PASSWORD &#39;*66CC8D8F94978869E17ABDA6FD2E1A5D817E619E&#39;;</span><br><span class="line">mysql&gt; GRANT all privileges on *.* to &#39;sre&#39;@&#39;%&#39; WITH GRANT OPTION;</span><br><span class="line">#创建用户hdm</span><br><span class="line">mysql&gt; CREATE USER &#39;hdm&#39;@&#39;%&#39; IDENTIFIED BY PASSWORD &#39;*14533888C6CA3952B3957903FF7E69469C7E3A2B&#39;;</span><br><span class="line">mysql&gt; GRANT SELECT, SHOW DATABASES, PROCESS, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO &#39;hdm&#39;@&#39;%&#39;;</span><br><span class="line">mysql&gt; flush privileges;</span><br><span class="line">mysql&gt; select user,host,authentication_string from mysql.user;</span><br></pre></td></tr></table></figure>
+
+
+
+<p>安装出错原因总结：</p>
+<ul>
+<li>网络信息鱼龙混杂，没有分辨准确性，许多步骤来自于不同的文章；</li>
+<li>参照其他版本的步骤安装此版本，导致中途目录出现不同而无法继续安装；</li>
+<li>重新安装此版本时，对于上个没有安装完成的数据库的痕迹没有清理干净；</li>
+</ul>
+<h3 id="MySQL的卸载"><a href="#MySQL的卸载" class="headerlink" title="MySQL的卸载"></a>MySQL的卸载</h3><p>1、关闭进程并删除mysqld</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">查看MySQL启动进程，</span></span><br><span class="line">ps -ef | grep mysqld     </span><br><span class="line"><span class="meta">#</span><span class="bash">若MySQL处于启动状态，停止MySQL服务</span></span><br><span class="line">cd /etc/init.d</span><br><span class="line">[root@cmp15 init.d]# ./mysqld stop</span><br><span class="line"><span class="meta">#</span><span class="bash">删除mysqld</span></span><br><span class="line">[root@cmp15 init.d]# rm -rf mysqld</span><br></pre></td></tr></table></figure>
+
+<p>2、删除数据目录，数据目录是个人创建的，可能不同</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /data/</span><br><span class="line">rm -rf mysql</span><br></pre></td></tr></table></figure>
+
+<p>3、删除安装目录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd &#x2F;usr&#x2F;local&#x2F;</span><br><span class="line">rm -rf mysql</span><br></pre></td></tr></table></figure>
+
+<p>4、删除配置文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm -rf /etc/my.cnf</span><br></pre></td></tr></table></figure>
+
+<h3 id="MySQL5-5-41的安装"><a href="#MySQL5-5-41的安装" class="headerlink" title="MySQL5.5.41的安装"></a>MySQL5.5.41的安装</h3><p>1、创建用户和组，指定MySQL所在的用户组</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">groupadd mysql</span><br><span class="line">useradd -g mysql mysql -s /sbin/nologin</span><br></pre></td></tr></table></figure>
+
+<p>2、下载安装包，并解压至/user/local/目录下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://downloads.mysql.com/archives/get/p/23/file/mysql-5.5.41-linux2.6-x86_64.tar.gz</span><br><span class="line">tar -xzvf mysql-5.5.41-linux2.6-x86_64.tar.gz -C /usr/local/</span><br></pre></td></tr></table></figure>
+
+<p>3、创建软连接，方便操作</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ln -s /usr/local/mysql-5.5.41-linux2.6-x86_64/ /usr/local/mysql</span><br></pre></td></tr></table></figure>
+
+<p>4、给MySQL目录授权，创建数据目录并授权</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">chown mysql:mysql -R /usr/local/mysql</span><br><span class="line">mkdir -p /data/mysql </span><br><span class="line">chown mysql:mysql -R /data/mysql</span><br></pre></td></tr></table></figure>
+
+<p>5、编辑配置文件my.cnf(该文件有问题)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/my.cnf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">datadir&#x3D;&#x2F;var&#x2F;lib&#x2F;mysql</span><br><span class="line">socket&#x3D;&#x2F;var&#x2F;lib&#x2F;mysql&#x2F;mysql.sock</span><br><span class="line">user&#x3D;mysql</span><br><span class="line"># Disabling symbolic-links is recommended to prevent assorted security risks</span><br><span class="line">symbolic-links&#x3D;0</span><br><span class="line"></span><br><span class="line">[mysqld_safe]</span><br><span class="line">log-error&#x3D;&#x2F;var&#x2F;log&#x2F;mysqld.log</span><br><span class="line">pid-file&#x3D;&#x2F;var&#x2F;run&#x2F;mysqld&#x2F;mysqld.pid</span><br></pre></td></tr></table></figure>
+
+<p>6、初始化数据库</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/mysql/scripts</span><br><span class="line">./mysql_install_db --basedir=/usr/local/mysql --datadir=/data/mysql --defaults-file=/etc/my.cnf --user=mysql</span><br></pre></td></tr></table></figure>
+
+<p>7、启动数据库</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;support-files&#x2F;mysql.server start</span><br><span class="line"># 或：</span><br><span class="line">&#x2F;usr&#x2F;local&#x2F;mysql&#x2F;bin&#x2F;mysqld_safe --defaults-file&#x3D;&#x2F;etc&#x2F;my.cnf --user&#x3D;mysql --basedir&#x3D;&#x2F;usr&#x2F;local&#x2F;mysql --datadir&#x3D;&#x2F;data&#x2F;mysql</span><br></pre></td></tr></table></figure>
+
+<p>8、查看是否启动成功</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef|grep mysqld</span><br></pre></td></tr></table></figure>
+
+<p>9、开放端口号</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">firewall-cmd --zone=public --add-port=3306/tcp --permanent</span><br><span class="line"><span class="meta">#</span><span class="bash">如果提示FirewallD is not running就无需处理，执行下一步即可</span></span><br><span class="line">firewall-cmd --reload</span><br></pre></td></tr></table></figure>
+
+<p>10、设置开机自启动</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">shell&gt;</span><span class="bash"> cp /usr/<span class="built_in">local</span>/mysql/support-files/mysql.server /etc/init.d/mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chmod +x /etc/init.d/mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig --add mysqld</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig mysqld on</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> chkconfig --list</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 若提示：Note: Forwarding request to <span class="string">&#x27;systemctl enable mysqld.service&#x27;</span>.则为centos7系统，用下面的命令</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> systemctl <span class="built_in">enable</span> mysqld.service</span></span><br><span class="line"><span class="meta">shell&gt;</span><span class="bash"> systemctl list-unit-files |grep mysql</span></span><br></pre></td></tr></table></figure>
+
+<p>11、进入数据库，空密码</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -u root -S /data/mysql/mysql.sock</span><br></pre></td></tr></table></figure>
+
+<p>12、修改root用户密码并设置永不过期</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">mysql&gt;</span><span class="bash"> SET PASSWORD = password(<span class="string">&#x27;Haier@123&#x27;</span>);</span></span><br><span class="line"><span class="meta">mysql&gt;</span><span class="bash"> flush privileges;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="MySQL版本的升级（5-5—-gt-5-7）"><a href="#MySQL版本的升级（5-5—-gt-5-7）" class="headerlink" title="MySQL版本的升级（5.5—&gt;5.7）"></a>MySQL版本的升级（5.5—&gt;5.7）</h3><p>1、关闭MySQL服务</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqladmin -uroot -p&#x27;xxxxxx&#x27; shutdown</span><br></pre></td></tr></table></figure>
+
+<p>2、下载新版本MySQL安装包，并解压至/user/local/目录下</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget https://mino-yn.oss-cn-qingdao.aliyuncs.com/mysql-5.7.23-el7-x86_64.tar.gz</span><br><span class="line">tar -zxvf mysql-5.7.23-el7-x86_64.tar.gz -C /usr/local/</span><br></pre></td></tr></table></figure>
+
+<p>3、取消旧版本mysql的软连接，并为新版本mysql软连接</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/</span><br><span class="line">unlink mysql</span><br><span class="line">ln -s /usr/local/mysql-5.7.23-el7-x86_64 /usr/local/mysql</span><br><span class="line">chown mysql:mysql -R /usr/local/mysql</span><br></pre></td></tr></table></figure>
+
+<p>4、启动新版本的MySQL服务，可能会出错，因为旧版本的某些参数被新版本抛弃，出错后查看日志信息把对应的参数设置从<code>/etc/my.cnf</code>中注销，然后重新启动MySQL服务即可</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --user=mysql --basedir=/usr/local/mysql --datadir=/data/mysql</span><br><span class="line"><span class="meta">#</span><span class="bash"> 查看一下是否启动</span></span><br><span class="line">ps -ef | grep mysql</span><br></pre></td></tr></table></figure>
+
+<p>5、升级系统表数据字典信息，该过程中会出现许多error，提示“ALTER TABLE ** FROCE”，这些错误不用担心mysql在后面会自动修复，但是修复时间可能会有点长，当出现“Upgrade process completed successfully.”说明升级成功</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysql_upgrade -uroot -p&#x27;xxxxxx&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>6、升级完以后重启一下MySQL</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysqladmin -uroot -p&#x27;xxxxxx&#x27; shutdown</span><br><span class="line">/usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --user=mysql --basedir=/usr/local/mysql --datadir=/data/mysql</span><br><span class="line">mysql --version</span><br><span class="line"><span class="meta">#</span><span class="bash"> mysql  Ver 14.14 Distrib 5.7.23, <span class="keyword">for</span> el7 (x86_64) using  EditLine wrapper</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>问题</strong>：</p>
+<p>在升级mysql5.5到mysql5.7的时候，替换mysql的base目录后，用下面的命令无法启动，错误日志也无记录：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld_safe --defaults-file=/usr/local/mysql/data/dzsp/my.cnf  --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data/dzsp</span><br></pre></td></tr></table></figure>
+
+<p>于是想到是不是有些参数未指定，于是尝试了之前的启动命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld --defaults-file=/usr/local/mysql/data/dzsp/my.cnf --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data/dzsp --plugin-dir=/usr/local/mysql/lib/plugin --user=mysql --log-error=dzspdb1.err --pid-file=dzspdb1.pid --socket=/tmp/mysql-dzsp.sock --port=3306</span><br></pre></td></tr></table></figure>
+
+<p>然后控制台就提示了如下的信息：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/lib64/libstdc++.so.6: version &#x27;GLIBCXX_3.4.15&#x27; not found (required by ...)</span><br></pre></td></tr></table></figure>
+
+<p>使用下面的命令查看，确实无’GLIBCXX_3.4.15’：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strings /usr/lib64/libstdc++.so.6 | grep GLIBCXX</span><br></pre></td></tr></table></figure>
+
+<p>于是更换libstdc++.so的版本：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">cd /opt</span><br><span class="line">wget http://ftp.de.debian.org/debian/pool/main/g/gcc-4.8/libstdc++6-4.8-dbg_4.8.4-1_amd64.deb</span><br><span class="line">ar -x libstdc++6-4.8-dbg_4.8.4-1_amd64.deb</span><br><span class="line">tar -xvf data.tar.xz</span><br><span class="line">-- 拷贝至/usr/lib64下</span><br><span class="line">cp ./usr/lib/x86_64-linux-gnu/debug/libstdc++.so.6.0.19 /usr/lib64</span><br><span class="line">-- 授权</span><br><span class="line">chmod +x /usr/lib64/libstdc++.so.6.0.19</span><br><span class="line">-- 删除低版本库的软连接</span><br><span class="line">rm /usr/lib64/libstdc++.so.6</span><br><span class="line">ln -s /usr/lib64/libstdc++.so.6.0.19 /usr/lib64/libstdc++.so.6</span><br><span class="line">cd /usr/local</span><br><span class="line">wget http://mirrors.ustc.edu.cn/gnu/libc/glibc-2.18.tar.gz</span><br><span class="line">tar -xzvf glibc-2.18.tar.gz</span><br><span class="line">cd glibc-2.18</span><br><span class="line">mkdir build &amp;&amp; cd build/</span><br><span class="line">../configure --prefix=/usr --disable-profile --enable-add-ons --with-headers=/usr/include --with-binutils=/usr/bin</span><br><span class="line">make -j4</span><br><span class="line">make install</span><br><span class="line">--- 解决中文乱码问题</span><br><span class="line">make localedata/install-locales</span><br><span class="line">--- 检查验证</span><br><span class="line">ll /lib64/libc*</span><br><span class="line">--- 查看系统glibc支持的版本</span><br><span class="line">strings /usr/lib64/libstdc++.so.6 | grep GLIBCXX</span><br></pre></td></tr></table></figure>
+
+<p>然后再次用下面的命令尝试启动mysql，然后控制台提示一些目录找不到</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld --defaults-file=/usr/local/mysql/data/dzsp/my.cnf --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data/dzsp --plugin-dir=/usr/local/mysql/lib/plugin --user=mysql --log-error=dzspdb1.err --pid-file=dzspdb1.pid --socket=/tmp/mysql-dzsp.sock --port=3306</span><br></pre></td></tr></table></figure>
+
+<p>发现原来的data目录在mysql5.5的base目录下，原来的my.cnf文件在data目录中。为方便起见，就在mysql5.7的base目录中创建了一个指向原data目录的软连接：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ln -s /home/mysql/mysql-5.5.41-linux2.6-x86_64/data /usr/local/mysql/data</span><br><span class="line">chown mysql:mysql -R /usr/local/mysql/data</span><br></pre></td></tr></table></figure>
+
+<p>然后再次执行上面的命令尝试启动mysql，发现无法启动，错误日志也无记录，于是查看进程发现有一个进程在占用‘/tmp/mysql-dzsp.sock’套接字文件，于是将该进程kill掉。然后执行下面的启动命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/mysql/bin/mysqld_safe --defaults-file=/usr/local/mysql/data/dzsp/my.cnf  --basedir=/usr/local/mysql --datadir=/usr/local/mysql/data/dzsp</span><br></pre></td></tr></table></figure>
+
+<p>无法启动，但是查看错误日志中有了一条错误信息，于是在my.cnf文件中将其注释掉</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] unknown variable ‘thread_concurrency=8’</span><br><span class="line">[ERROR] Aborting</span><br></pre></td></tr></table></figure>
+
+<p>然后再次启动mysql，无法启动，再次查看错误日志，发现如下错误信息，将其也在my.cnf文件中注销：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] unknown variable ‘innodb_additional_mem_pool_size=20M’</span><br><span class="line">[ERROR] Aborting</span><br></pre></td></tr></table></figure>
+
+<p>然后再次启动，发现成功启动了！最大嫌疑人锁定为无’GLIBCXX_3.4.15’和占用套接字文件的那个线程！</p>
+<h3 id="MySQL升级后xtrabackup备份报错"><a href="#MySQL升级后xtrabackup备份报错" class="headerlink" title="MySQL升级后xtrabackup备份报错"></a>MySQL升级后xtrabackup备份报错</h3><p>报错信息：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Error: failed to fetch query result SHOW VARIABLES: Native table &#x27;performance_schema&#x27;.&#x27;session_variables&#x27; has the wrong structure</span><br></pre></td></tr></table></figure>
+
+<p>原因：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">从mysql5.7.6开始information_schema.global_status已经开始被舍弃，为了兼容性，此时需要打开 show_compatibility_56 </span><br></pre></td></tr></table></figure>
+
+<p>解决：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; set @@global.show_compatibility_56&#x3D;ON;</span><br></pre></td></tr></table></figure>
+
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E5%AE%89%E8%A3%85%E9%83%A8%E7%BD%B2/" rel="tag"># 安装部署</a>
+              <a href="/tags/%E5%8D%B8%E8%BD%BD/" rel="tag"># 卸载</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog4.html" rel="prev" title="用正则表达式进行搜索">
+      <i class="fa fa-chevron-left"></i> 用正则表达式进行搜索
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/blog6.html" rel="next" title="MySQL检索字段处理">
+      MySQL检索字段处理 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL5-7-23%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">MySQL5.7.23的安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL%E7%9A%84%E5%8D%B8%E8%BD%BD"><span class="nav-number">2.</span> <span class="nav-text">MySQL的卸载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL5-5-41%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-number">3.</span> <span class="nav-text">MySQL5.5.41的安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL%E7%89%88%E6%9C%AC%E7%9A%84%E5%8D%87%E7%BA%A7%EF%BC%885-5%E2%80%94-gt-5-7%EF%BC%89"><span class="nav-number">4.</span> <span class="nav-text">MySQL版本的升级（5.5—&gt;5.7）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#MySQL%E5%8D%87%E7%BA%A7%E5%90%8Extrabackup%E5%A4%87%E4%BB%BD%E6%8A%A5%E9%94%99"><span class="nav-number">5.</span> <span class="nav-text">MySQL升级后xtrabackup备份报错</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">AJINGPC</p>
+  <div class="site-description" itemprop="description">生活很苦闷，但跑起来就有风。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/FoeverYoung-JPC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;FoeverYoung-JPC" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213@qq.com" title="E-Mail → 995934213@qq.com"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213" title="QQ → 995934213"><i class="fa fa-fw fa-qq"></i>QQ</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">AJINGPC</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

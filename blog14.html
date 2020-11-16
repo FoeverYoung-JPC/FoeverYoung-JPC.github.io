@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jpc.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="组合查询有时候需要从不同的表或同一个表多次查询结构相同的数据，此时可以使用组合查询，其关键字为union，该关键字用于连接两条完整的select语句。例如：查询地址表中收货人是姓王的和手机号码以184开头的用户信息，可以将两条select语句用union连接起来  上面的组合查询可以用where子句来完成：  可以看出这种方式似乎更为简单，但是在某些复杂语句中where子句可能就无能为力了，并且在">
+<meta property="og:type" content="article">
+<meta property="og:title" content="组合查询与全文本检索">
+<meta property="og:url" content="https://jpc.github.io/blog14.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="组合查询有时候需要从不同的表或同一个表多次查询结构相同的数据，此时可以使用组合查询，其关键字为union，该关键字用于连接两条完整的select语句。例如：查询地址表中收货人是姓王的和手机号码以184开头的用户信息，可以将两条select语句用union连接起来  上面的组合查询可以用where子句来完成：  可以看出这种方式似乎更为简单，但是在某些复杂语句中where子句可能就无能为力了，并且在">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A21.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A22.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A23.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A21.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A22.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A23.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog14/%E5%B8%83%E5%B0%94%E6%96%87%E6%9C%AC%E6%90%9C%E7%B4%A2.PNG">
+<meta property="article:published_time" content="2020-08-24T06:00:07.000Z">
+<meta property="article:modified_time" content="2020-09-09T07:42:26.457Z">
+<meta property="article:author" content="AJINGPC">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="SQL">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="study">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jpc.github.io/blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A21.PNG">
+
+<link rel="canonical" href="https://jpc.github.io/blog14.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>组合查询与全文本检索 | Jing's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jing's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Jing Pengchong</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jpc.github.io/blog14.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="AJINGPC">
+      <meta itemprop="description" content="生活很苦闷，但跑起来就有风。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jing's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          组合查询与全文本检索
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-24 14:00:07" itemprop="dateCreated datePublished" datetime="2020-08-24T14:00:07+08:00">2020-08-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-09-09 15:42:26" itemprop="dateModified" datetime="2020-09-09T15:42:26+08:00">2020-09-09</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/" itemprop="url" rel="index"><span itemprop="name">study</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="组合查询"><a href="#组合查询" class="headerlink" title="组合查询"></a>组合查询</h3><p>有时候需要从不同的表或同一个表多次查询结构相同的数据，此时可以使用组合查询，其关键字为union，该关键字用于连接两条完整的select语句。例如：查询地址表中收货人是姓王的和手机号码以184开头的用户信息，可以将两条select语句用union连接起来</p>
+<p><img src="blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A21.PNG"></p>
+<p>上面的组合查询可以用where子句来完成：</p>
+<p><img src="blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A22.PNG"></p>
+<p>可以看出这种方式似乎更为简单，但是在某些复杂语句中where子句可能就无能为力了，并且在某些特定的需求中，比如要求包两个语句查询出的重复行时，where子句就不行了，而这时只要在union关键字后面加一个“all”就完美解决了该需求：</p>
+<p><img src="blog14/%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A23.PNG"></p>
+<p>如果要对组合查询的结果进行排序，则ORDER BY需要放在最后一条select语句后面。</p>
+<h3 id="全文本检索"><a href="#全文本检索" class="headerlink" title="全文本检索"></a>全文本检索</h3><h4 id="为何使用全文检索"><a href="#为何使用全文检索" class="headerlink" title="为何使用全文检索"></a>为何使用全文检索</h4><ul>
+<li>通配符与正则表达式匹配表中的所有行，性能低下；</li>
+<li>通配符与正则表达式不能进行明确的匹配，例如一个词必须匹配，一个词必须不匹配；</li>
+<li>通配符与正则表达式匹配不够智能，不区分单个匹配的行与多个匹配的行，也不能匹配相关词。</li>
+</ul>
+<h4 id="如何使用全文检索"><a href="#如何使用全文检索" class="headerlink" title="如何使用全文检索"></a>如何使用全文检索</h4><ul>
+<li>表的存储引擎必须是MyISAM；</li>
+<li>创建或修改表时使用FULLTEXT()为特定的列建立索引，对表修改时MySQL会自动维护索引；</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">#为已存在的某表添加全文索引</span><br><span class="line">ALTER TABLE &#96;table_name&#96; ADD FULLTEXT ( &#96;column&#96;);</span><br><span class="line"></span><br><span class="line">#新建表时设置全文索引</span><br><span class="line">create table productnotes( note_id int not null auto_increment, prod_id char(10) not null, note_date datetime not null, note_text text null, primary key(note_id), fulltext(note_text))ENGINE&#x3D;MyISAM;</span><br><span class="line"></span><br><span class="line">#插入测试数据</span><br><span class="line">insert into productnotes (prod_id, note_date, note_text) values </span><br><span class="line">(&#39;001&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;This is the MySQL™ Reference Manual. It documents MySQL 5.7 through 5.7.32, as well as NDB Cluster releases based on version 7.5 of NDB through 5.7.31-ndb-7.5.20, respectively.&#39;),</span><br><span class="line">(&#39;002&#39;, &#39;2019-06-02 02:54:55&#39;, &#39;It may include documentation of features of MySQL versions that have not yet been released. &#39;),</span><br><span class="line">(&#39;003&#39;, &#39;2019-07-05 03:53:58&#39;, &#39;For information about which versions have been released, see the MySQL 5.7 Release Notes.&#39;),</span><br><span class="line">(&#39;004&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;This manual describes features that are not included in every edition of MySQL 5.7; such features may not be included in the edition of MySQL 5.7 licensed to you.&#39;),</span><br><span class="line">(&#39;005&#39;, &#39;2020-03-05 01:53:55&#39;, &#39;If you have any questions about the features included in your edition of MySQL 5.7, refer to your MySQL 5.7 license agreement or contact your Oracle sales representative.&#39;),</span><br><span class="line">(&#39;006&#39;, &#39;2019-03-08 04:53:55&#39;, &#39;For notes detailing the changes in each release, see the MySQL 5.7 Release Notes.&#39;),</span><br><span class="line">(&#39;007&#39;, &#39;2019-08-05 09:58:55&#39;, &#39;For legal information, including licensing information, see the Preface and Legal Notices.&#39;),</span><br><span class="line">(&#39;008&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;For help with using MySQL, please visit the MySQL Forums, where you can discuss your issues with other MySQL users.&#39;),</span><br><span class="line">(&#39;009&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;Document generated on: 2020-08-24 (revision: 67106)&#39;),</span><br><span class="line">(&#39;010&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;This product may include third-party software, used under license. &#39;),</span><br><span class="line">(&#39;011&#39;, &#39;2019-03-05 01:53:55&#39;, &#39;This software and related documentation are provided under a license agreement containing restrictions on use and disclosure and are protected by intellectual property laws. &#39;);</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>在索引之后，使用SELECT可与Match()和Against()一起进行全文检索，其中Match()指定被搜索的列，Against()指定要使用的搜索表达式。 传递给Match()的值必须与 FULLTEXT()定义中的相同。如果指定多个列，则必须列出它 们（而且次序正确）。例如：在索引列note_text中匹配‘features’</li>
+</ul>
+<p><img src="blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A21.PNG"></p>
+<ul>
+<li>在上面的查询结果中并没有按照prod_id排序，其排序规则依靠索引字段的匹配等级。在查询结果中可以验证以下规则：包含词越靠前，匹配等级越高；包含词越多，匹配等级越高；全文检索默认按照匹配等级降序排列。</li>
+</ul>
+<h4 id="查询扩展"><a href="#查询扩展" class="headerlink" title="查询扩展"></a>查询扩展</h4><p>扩展查询需要在against()中使用“with query expansion”，其原理如下：</p>
+<ul>
+<li>首先，MySQL进行一个全文检索，找出包含检索词的所有行；</li>
+<li>其次，MySQL对包含检索词的行进行分析，找出有用词；</li>
+<li>最后，MySQL根据分析出来的有用词再次进行全文检索。</li>
+</ul>
+<p>例如：扩展查询“features”</p>
+<p><img src="blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A22.PNG"></p>
+<h4 id="布尔文本搜索"><a href="#布尔文本搜索" class="headerlink" title="布尔文本搜索"></a>布尔文本搜索</h4><p>布尔文本搜索与上面的全文检索不同的是，即使没有定义FULLTEXT索引依然可以使用。使用布尔文本搜索方式可以更加精确的匹配所要查询的内容：要匹配的词、要排斥的词、指定某个词的重要等级、表达式分组及另外一些内容。例如：查询必需包含features且必须不包含以man开头词汇的行，可以看到prod_id为004的记录没了，因为其note_text包含manual</p>
+<p><img src="blog14/%E5%85%A8%E6%96%87%E6%90%9C%E7%B4%A23.PNG"></p>
+<p>布尔文本搜索支持的布尔操作符如下表，没有指定操作符的几个词汇是至少包含其中一个词：</p>
+<p><img src="blog14/%E5%B8%83%E5%B0%94%E6%96%87%E6%9C%AC%E6%90%9C%E7%B4%A2.PNG"></p>
+<h4 id="全文本检索的说明"><a href="#全文本检索的说明" class="headerlink" title="全文本检索的说明"></a>全文本检索的说明</h4><ul>
+<li>索引全文本数据时，仅包含3个及以下字符的短词不会被建立索引；</li>
+<li>MySQL带有一个内建的停用词表，其中的词汇不会被建立索引；</li>
+<li>一个词若出现在50%以上的行中，该词将不会被建立索引(布尔文本搜索除外)，因此只有两行的表进行全文本检索不返回任何结果；</li>
+<li>词中的单引号在建立索引时将会被忽略，例如，I’m索引为Im；</li>
+<li>索引的建立依靠词分隔符(即空格)，因此对于中文的支持不太友好；</li>
+<li>仅在MyISAM数据库引擎中支持全文本搜索。 </li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/SQL/" rel="tag"># SQL</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/study/" rel="tag"># study</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog13.html" rel="prev" title="子查询与联结查询">
+      <i class="fa fa-chevron-left"></i> 子查询与联结查询
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/blog15.html" rel="next" title="视图、存储过程、游标、触发器">
+      视图、存储过程、游标、触发器 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%84%E5%90%88%E6%9F%A5%E8%AF%A2"><span class="nav-number">1.</span> <span class="nav-text">组合查询</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E6%96%87%E6%9C%AC%E6%A3%80%E7%B4%A2"><span class="nav-number">2.</span> <span class="nav-text">全文本检索</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95%E4%BD%BF%E7%94%A8%E5%85%A8%E6%96%87%E6%A3%80%E7%B4%A2"><span class="nav-number">2.1.</span> <span class="nav-text">为何使用全文检索</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8%E5%85%A8%E6%96%87%E6%A3%80%E7%B4%A2"><span class="nav-number">2.2.</span> <span class="nav-text">如何使用全文检索</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%89%A9%E5%B1%95"><span class="nav-number">2.3.</span> <span class="nav-text">查询扩展</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B8%83%E5%B0%94%E6%96%87%E6%9C%AC%E6%90%9C%E7%B4%A2"><span class="nav-number">2.4.</span> <span class="nav-text">布尔文本搜索</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%A8%E6%96%87%E6%9C%AC%E6%A3%80%E7%B4%A2%E7%9A%84%E8%AF%B4%E6%98%8E"><span class="nav-number">2.5.</span> <span class="nav-text">全文本检索的说明</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">AJINGPC</p>
+  <div class="site-description" itemprop="description">生活很苦闷，但跑起来就有风。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/FoeverYoung-JPC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;FoeverYoung-JPC" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213@qq.com" title="E-Mail → 995934213@qq.com"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213" title="QQ → 995934213"><i class="fa fa-fw fa-qq"></i>QQ</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">AJINGPC</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

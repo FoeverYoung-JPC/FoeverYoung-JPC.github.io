@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jpc.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="XtraBackup简介XtraBackup是Percona公司的开源产品，据官方介绍它是世界上唯一一款能够对InnoDB和XtraDB数据库进行热备的工具。它的优点是备份与恢复过程的速度很快，安全可靠，而且在备份过程中不会锁表，不会影响现有业务。 rpm方式安装XtraBackup主库所在服务器与从库所在服务器都要安装。 12345678910111213141516# 下载cd &#x2F;optwge">
+<meta property="og:type" content="article">
+<meta property="og:title" content="XtraBackup备份与搭建主从数据库">
+<meta property="og:url" content="https://jpc.github.io/blog11.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="XtraBackup简介XtraBackup是Percona公司的开源产品，据官方介绍它是世界上唯一一款能够对InnoDB和XtraDB数据库进行热备的工具。它的优点是备份与恢复过程的速度很快，安全可靠，而且在备份过程中不会锁表，不会影响现有业务。 rpm方式安装XtraBackup主库所在服务器与从库所在服务器都要安装。 12345678910111213141516# 下载cd &#x2F;optwge">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jpc.github.io/blog11/%E6%BA%90%E6%96%87%E4%BB%B6.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog11/%E5%A4%87%E4%BB%BD%E6%96%87%E4%BB%B6.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog11/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%8A%B6%E6%80%81.png">
+<meta property="og:image" content="https://jpc.github.io/blog11/spacenotenough.png">
+<meta property="og:image" content="https://jpc.github.io/blog11/error3.png">
+<meta property="article:published_time" content="2020-08-18T06:11:25.000Z">
+<meta property="article:modified_time" content="2020-10-21T04:46:08.894Z">
+<meta property="article:author" content="AJINGPC">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="SQL">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="XtraBackup">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jpc.github.io/blog11/%E6%BA%90%E6%96%87%E4%BB%B6.PNG">
+
+<link rel="canonical" href="https://jpc.github.io/blog11.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>XtraBackup备份与搭建主从数据库 | Jing's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jing's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Jing Pengchong</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jpc.github.io/blog11.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="AJINGPC">
+      <meta itemprop="description" content="生活很苦闷，但跑起来就有风。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jing's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          XtraBackup备份与搭建主从数据库
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-18 14:11:25" itemprop="dateCreated datePublished" datetime="2020-08-18T14:11:25+08:00">2020-08-18</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-10-21 12:46:08" itemprop="dateModified" datetime="2020-10-21T12:46:08+08:00">2020-10-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/" itemprop="url" rel="index"><span itemprop="name">study</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/XtraBackup/" itemprop="url" rel="index"><span itemprop="name">XtraBackup</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/XtraBackup/%E5%A4%87%E4%BB%BD/" itemprop="url" rel="index"><span itemprop="name">备份</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="XtraBackup简介"><a href="#XtraBackup简介" class="headerlink" title="XtraBackup简介"></a>XtraBackup简介</h3><p>XtraBackup是Percona公司的开源产品，据官方介绍它是世界上唯一一款能够对InnoDB和XtraDB数据库进行热备的工具。它的优点是备份与恢复过程的速度很快，安全可靠，而且在备份过程中不会锁表，不会影响现有业务。</p>
+<h3 id="rpm方式安装XtraBackup"><a href="#rpm方式安装XtraBackup" class="headerlink" title="rpm方式安装XtraBackup"></a>rpm方式安装XtraBackup</h3><p>主库所在服务器与从库所在服务器都要安装。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载</span></span><br><span class="line">cd /opt</span><br><span class="line">wget http://devops-files.oss-cn-qingdao.aliyuncs.com/percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装</span></span><br><span class="line">rpm -ivh percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm</span><br><span class="line"><span class="meta">#</span><span class="bash"> 出错</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> warning: percona-xtrabackup-24-2.4.12-1.el7.x86_64.rpm: Header V4 DSA/SHA1 Signature, key ID cd2efd2a: NOKEY</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> error: Failed dependencies:</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 	libev.so.4()(64bit) is needed by percona-xtrabackup-24-2.4.12-1.el7.x86_64</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 	perl(DBD::mysql) is needed by percona-xtrabackup-24-2.4.12-1.el7.x86_64</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 	perl(Digest::MD5) is needed by percona-xtrabackup-24-2.4.12-1.el7.x86_64</span></span><br><span class="line"></span><br><span class="line">wget http://devops-files.oss-cn-qingdao.aliyuncs.com/libev-4.15-1.el6.x86_64.rpm</span><br><span class="line">yum -y install perl-DBD-MySQL</span><br><span class="line">yum -y install perl-Digest-MD5</span><br><span class="line">rpm -ivh libev-4.15-1.el6.x86_64.rpm</span><br></pre></td></tr></table></figure>
+
+<p>详<a target="_blank" rel="noopener" href="https://huiraoo.github.io/blog/2019/06/18/mysql-xtrabackup/">见博客</a></p>
+<h3 id="rpm方式卸载XtraBackup"><a href="#rpm方式卸载XtraBackup" class="headerlink" title="rpm方式卸载XtraBackup"></a>rpm方式卸载XtraBackup</h3><p>在此处仅作为知识扩充，还没备份与恢复备份之前不要盲目的卸载。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@db ~]# rpm -qa | grep percona</span><br><span class="line">percona-xtrabackup-24-2.4.12-1.el7.x86_64</span><br><span class="line">[root@db ~]# rpm -ev percona-xtrabackup-24-2.4.12-1.el7.x86_64</span><br></pre></td></tr></table></figure>
+
+<h3 id="修改从库配置文件"><a href="#修改从库配置文件" class="headerlink" title="修改从库配置文件"></a>修改从库配置文件</h3><p>修改从库的my.cnf文件，在此之前需要关掉mysql服务，在从库恢复备份后再开启，否则mysql的进程将会名存实亡，并且在恢复数据完成后开始mysql服务时将会报找不到mysql.sock的错误。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">关闭mysql服务</span></span><br><span class="line">mysqladmin -uroot -p&#x27;Haier@123&#x27; shutdown;</span><br><span class="line"><span class="meta">#</span><span class="bash">修改配置文件</span></span><br><span class="line">vim /etc/my.cnf</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">server_id         = 3306101 #与主库保持不同</span><br><span class="line">log_bin           = mysql-bin</span><br><span class="line">relay_log         = relay-log</span><br><span class="line">read_only         = 1</span><br><span class="line">log_slave_updates = 1</span><br></pre></td></tr></table></figure>
+
+<h3 id="全量备份"><a href="#全量备份" class="headerlink" title="全量备份"></a>全量备份</h3><p>1、全备命令</p>
+<p>innobackupex –defaults-file=配置文件 –user=用户名 –password=密码 –no-timestamp 备份存放路径</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@db ~]# innobackupex --defaults-file=/etc/my.cnf --user=sre --password=&#x27;sre@@p$i&#x27; --no-timestamp /home/backup</span><br></pre></td></tr></table></figure>
+
+<p>源文件：cd /home/data/mysql/</p>
+<p><img src="blog11/%E6%BA%90%E6%96%87%E4%BB%B6.PNG"></p>
+<p>备份文件：cd /home/backup/</p>
+<p><img src="blog11/%E5%A4%87%E4%BB%BD%E6%96%87%E4%BB%B6.PNG"></p>
+<p>可以看到，除了有备份数据库名称的文件，还有以xtrabackup开头的文件：</p>
+<ul>
+<li>xtrabackup_binlog_info：记录当前二进制日志和偏移量；</li>
+<li>xtrabackup_checkpoints：记录当前备份的类型，与<a target="_blank" rel="noopener" href="https://baike.baidu.com/item/lsn/8667766?fr=aladdin">lsn号</a>；</li>
+<li>xtrabackup_info：记录当前备份的命令、开始与结束时间、MySQL与XtraBackup的版本号等信息；</li>
+<li>xtrabackup_logfile：记录从备份开始到备份结束所有的 redo 日志(数据被事务修改之后的值)。</li>
+</ul>
+<p>2、在要搭建从库的服务器创建文件夹，接收从主库传送的备份文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@jpc ~]# mkdir /home/backup</span><br></pre></td></tr></table></figure>
+
+<p>3、将主库的备份文件传输到从库所在的服务器</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@db ~]# scp -r /home/backup/* root@10.181.192.228:/home/backup</span><br></pre></td></tr></table></figure>
+
+<p>4、在从库中恢复主库的全备数据</p>
+<p>备份应用日志，–apply-log的作用是通过读取xtrabackup_logfile文件记录的redo日志来回滚未提交的事务及同步已经提交的事务到数据库文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">[root@jpc ~]# innobackupex --defaults-file=/etc/my.cnf --apply-log /home/backup </span><br><span class="line"><span class="meta">#</span><span class="bash">将原MySQL数据目录/data/mysql改名</span></span><br><span class="line">[root@jpc data]# mv mysql mysql_bak</span><br><span class="line"><span class="meta">#</span><span class="bash">重建Mysql数据目录</span></span><br><span class="line">[root@jpc data]# mkdir mysql</span><br><span class="line"><span class="meta">#</span><span class="bash">恢复数据,将备份还原到 my.cnf 指定的 datadir 中，不指定 --defaults-file，默认 /etc/my.cnf</span></span><br><span class="line"><span class="meta">#</span><span class="bash">--move-back 不保留备份，相当于 mv</span></span><br><span class="line"><span class="meta">#</span><span class="bash">--copy-back 保留备份，相当于cp</span></span><br><span class="line">[root@jpc ~]# innobackupex --defaults-file=/etc/my.cnf --copy-back /home/backup</span><br><span class="line"><span class="meta">#</span><span class="bash">对新目录/data/mysql进行授权</span></span><br><span class="line">[root@jpc data]# chown -R mysql:mysql mysql</span><br><span class="line"><span class="meta">#</span><span class="bash">重启MySQL服务，如果MySQL数据库启动失败，查看确认新的数据目录权限用户是否为mysql</span></span><br><span class="line">[root@jpc ~]# /usr/local/mysql/bin/mysqld_safe --defaults-file=/etc/my.cnf --user=mysql &gt;/dev/null &amp;</span><br><span class="line"><span class="meta">#</span><span class="bash">可以查看mysqld进程</span></span><br><span class="line">[root@jpc ~]# ps -ef | grep mysqld</span><br><span class="line"><span class="meta">#</span><span class="bash">可以登录即恢复备份成功</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="搭建主从复制关系"><a href="#搭建主从复制关系" class="headerlink" title="搭建主从复制关系"></a>搭建主从复制关系</h3><p>1、查看当前binlog日志和偏移量</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@db ~]# cat /home/backup/xtrabackup_binlog_info</span><br></pre></td></tr></table></figure>
+
+<p>2、在主库创建用户，从库根据此用户登录主库</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">GRANT REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO &#39;repl&#39;@&#39;10.181.192.228&#39; IDENTIFIED BY &#39;Changeme_123&#39;;</span><br></pre></td></tr></table></figure>
+
+<p>3、在从库建立主从关系</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CHANGE MASTER TO MASTER_HOST&#x3D;&#39;10.181.192.211&#39;,</span><br><span class="line">MASTER_USER&#x3D;&#39;repl&#39;,</span><br><span class="line">MASTER_PASSWORD&#x3D;&#39;Changeme_123&#39;,</span><br><span class="line">MASTER_PORT&#x3D;3306,</span><br><span class="line">MASTER_LOG_FILE&#x3D;&#39;mysql-binlog.000269&#39;, MASTER_LOG_POS&#x3D;731596103,</span><br><span class="line">MASTER_CONNECT_RETRY&#x3D;10;</span><br></pre></td></tr></table></figure>
+
+<p>4、开启主从复制</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">START SLAVE;</span><br><span class="line">SHOW SLAVE STATUS\G</span><br></pre></td></tr></table></figure>
+
+<p><img src="blog11/%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E7%8A%B6%E6%80%81.png"></p>
+<h3 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h3><p>流程大概分为：使用XtraBackup将主库的数据进行备份，将备份数据传送给从库，在从库上用主库的备份数据文件替换原有的数据文件，配置主从关系，使得后续主库的变化可以反应在从库上。</p>
+<p>主从复制原理：主库有一个IO线程将记录在二进制日志上的对数据库数据进行改变的信息发送给从库，从库有一个IO线程将接收的主库发来的信息记录在中继日志上，从库还有一个SQL线程用来将中继日志上记录的对数据库的改变反应到从库中，以此达到主从一致。</p>
+<h3 id="主库所在服务器磁盘空间不足"><a href="#主库所在服务器磁盘空间不足" class="headerlink" title="主库所在服务器磁盘空间不足"></a>主库所在服务器磁盘空间不足</h3><p>通过阿里云DBS将主库的备份数据恢复到从库服务器指定目录(一般是/home/backup/)，然后在从库恢复数据，然后开启主从复制即可。</p>
+<p>操作步骤：进入阿里云备份计划列表，找到主库的备份计划并进入，在侧边栏选择“全量数据备份”，查看时间最近且主库上当日的binlog还在的备份是否完成，如果完成则在侧边栏选择“恢复任务”，点击“恢复数据库”，填写下面的信息点击下一步，点击预检查并启动，接着等待完成即可。</p>
+<p><img src="blog11/spacenotenough.png"></p>
+<h3 id="主从复制中断"><a href="#主从复制中断" class="headerlink" title="主从复制中断"></a>主从复制中断</h3><p><strong>问题一：</strong>1062:Duplicate entry ‘xxx’ for key ‘PRIMARY’(主键冲突)</p>
+<p>解决：跳过该错误</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; stop slave;</span><br><span class="line">mysql&gt; set global sql_slave_skip_counter&#x3D;1;</span><br><span class="line">mysql&gt; start slave;</span><br></pre></td></tr></table></figure>
+
+<p>或：利用<a target="_blank" rel="noopener" href="https://mino-yn.github.io/blog/2019/09/06/Percona%20Toolkit/">percona-toolkit</a>工具</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@xxx bin]# ./pt-slave-restart -uusername -p&#x27;password&#x27;  --error-numbers=1062</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题二：</strong>1399:Error ‘XAER_RMFAIL: The command cannot be executed when global transaction is in the  ACTIVE state’ on query. Default database: ‘cosmo_im_1006’. Query: ‘COMMIT’</p>
+<p>解决：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[root@xxx bin]# ./pt-slave-restart -uusername -p&#x27;password&#x27;  --error-numbers=1399</span><br></pre></td></tr></table></figure>
+
+<p>一劳永逸(等主从同步后再操作)：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在my.cnf文件的[mysqld]组下面添加slave_skip_errors</span></span><br><span class="line">vim /etc/my.cnf</span><br><span class="line">slave_skip_errors	  = 1399</span><br><span class="line"><span class="meta">#</span><span class="bash"> 然后重启数据库服务</span></span><br><span class="line">cd /etc/init.d/</span><br><span class="line">./mysqld stop</span><br><span class="line">./mysqld start</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题三：</strong>1236:Got fatal error 1236 from master when reading data from binary log: ‘Client requested master to start replication from position &gt; file size’</p>
+<p>例：</p>
+<p><img src="blog11/error3.png"></p>
+<p>解决：</p>
+<p>1、在主库上查看复制中断时的binlog，找到end_log_pos 1047965453：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@xxx ~]# cd /data/mysql</span><br><span class="line">[root@xxx mysql]# mysqlbinlog mysql-binlog.000231 &gt; mysql-binlog.000231.log</span><br><span class="line">[root@xxx mysql]# tail -f mysql-binlog.000231</span><br><span class="line">mysql-binlog.000231      mysql-binlog.000231.log</span><br><span class="line">[root@xxx mysql]# tail -f mysql-binlog.000231.log</span><br><span class="line"><span class="meta">#</span><span class="bash"> at 1047965363</span></span><br><span class="line"><span class="meta">#</span><span class="bash">201020 17:49:02 server id 3306100  end_log_pos 1047965453 CRC32 0xddb43282     Query   thread_id=91769 exec_time=0     error_code=0</span></span><br><span class="line">SET TIMESTAMP=1603187342/*!*/;</span><br><span class="line">COMMIT</span><br><span class="line">/*!*/;</span><br><span class="line">SET @@SESSION.GTID_NEXT= &#x27;AUTOMATIC&#x27; /* added by mysqlbinlog */ /*!*/;</span><br><span class="line">DELIMITER ;</span><br><span class="line"><span class="meta">#</span><span class="bash"> End of <span class="built_in">log</span> file</span></span><br><span class="line">/*!50003 SET COMPLETION_TYPE=@OLD_COMPLETION_TYPE*/;</span><br><span class="line">/*!50530 SET @@SESSION.PSEUDO_SLAVE_MODE=0*/;</span><br></pre></td></tr></table></figure>
+
+<p>2、在从库上根据end_log_pos 1047965453重新建立主从关系并开启slave：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">CHANGE MASTER TO </span><br><span class="line">MASTER_HOST&#x3D;&#39;10.152.5.36&#39;,</span><br><span class="line">MASTER_USER&#x3D;&#39;repl&#39;,</span><br><span class="line">MASTER_PASSWORD&#x3D;&#39;Changeme_123&#39;,</span><br><span class="line">MASTER_PORT&#x3D;3306,</span><br><span class="line">MASTER_LOG_FILE&#x3D;&#39;mysql-binlog.000231&#39;, </span><br><span class="line">MASTER_LOG_POS&#x3D;1047965453,</span><br><span class="line">MASTER_CONNECT_RETRY&#x3D;10;</span><br><span class="line"></span><br><span class="line">start slave;</span><br></pre></td></tr></table></figure>
+
+<p>3、查看从库的主从复制状态，如果有错误则跳过。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/SQL/" rel="tag"># SQL</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/XtraBackup/" rel="tag"># XtraBackup</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog10.html" rel="prev" title="SSH介绍与配置免密登录">
+      <i class="fa fa-chevron-left"></i> SSH介绍与配置免密登录
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/blog12.html" rel="next" title="MySQL数据库接入阿里云DAS控制台和XHaier控制台">
+      MySQL数据库接入阿里云DAS控制台和XHaier控制台 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#XtraBackup%E7%AE%80%E4%BB%8B"><span class="nav-number">1.</span> <span class="nav-text">XtraBackup简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpm%E6%96%B9%E5%BC%8F%E5%AE%89%E8%A3%85XtraBackup"><span class="nav-number">2.</span> <span class="nav-text">rpm方式安装XtraBackup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpm%E6%96%B9%E5%BC%8F%E5%8D%B8%E8%BD%BDXtraBackup"><span class="nav-number">3.</span> <span class="nav-text">rpm方式卸载XtraBackup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9%E4%BB%8E%E5%BA%93%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">修改从库配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E9%87%8F%E5%A4%87%E4%BB%BD"><span class="nav-number">5.</span> <span class="nav-text">全量备份</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%90%AD%E5%BB%BA%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E5%85%B3%E7%B3%BB"><span class="nav-number">6.</span> <span class="nav-text">搭建主从复制关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B4%E6%98%8E"><span class="nav-number">7.</span> <span class="nav-text">说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E5%BA%93%E6%89%80%E5%9C%A8%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%A3%81%E7%9B%98%E7%A9%BA%E9%97%B4%E4%B8%8D%E8%B6%B3"><span class="nav-number">8.</span> <span class="nav-text">主库所在服务器磁盘空间不足</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E4%BB%8E%E5%A4%8D%E5%88%B6%E4%B8%AD%E6%96%AD"><span class="nav-number">9.</span> <span class="nav-text">主从复制中断</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">AJINGPC</p>
+  <div class="site-description" itemprop="description">生活很苦闷，但跑起来就有风。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/FoeverYoung-JPC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;FoeverYoung-JPC" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213@qq.com" title="E-Mail → 995934213@qq.com"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213" title="QQ → 995934213"><i class="fa fa-fw fa-qq"></i>QQ</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">AJINGPC</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

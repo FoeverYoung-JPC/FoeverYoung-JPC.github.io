@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"jpc.github.io","root":"/","scheme":"Pisces","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":true,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="为了通过页面进行可视化的运维，需要将数据库接入到阿里云DAS控制台和XHaier控制台。 接入阿里云DAS控制台首先登录阿里云账号，侧边栏选择“数据库自治服务DAS”，然后在热荐功能区点击“快速实例接入”。这里有三种实例：阿里云数据库、阿里云ECS自建数据库(在阿里云服务器上自建的数据库)、其他自建或其他云厂商数据库。三种数据库实例的接入方式参见阿里云官方文档。 选择接入方式点击“其他自建或其他云">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL数据库接入阿里云DAS控制台和XHaier控制台">
+<meta property="og:url" content="https://jpc.github.io/blog12.html">
+<meta property="og:site_name" content="Jing&#39;s Blog">
+<meta property="og:description" content="为了通过页面进行可视化的运维，需要将数据库接入到阿里云DAS控制台和XHaier控制台。 接入阿里云DAS控制台首先登录阿里云账号，侧边栏选择“数据库自治服务DAS”，然后在热荐功能区点击“快速实例接入”。这里有三种实例：阿里云数据库、阿里云ECS自建数据库(在阿里云服务器上自建的数据库)、其他自建或其他云厂商数据库。三种数据库实例的接入方式参见阿里云官方文档。 选择接入方式点击“其他自建或其他云">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://jpc.github.io/blog12/%E4%B8%89%E7%A7%8D%E6%8E%A5%E5%85%A5%E6%96%B9%E5%BC%8F.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog12/%E9%80%89%E6%8B%A9%E7%BD%91%E7%BB%9C%E7%B1%BB%E5%9E%8B.PNG">
+<meta property="og:image" content="https://jpc.github.io/blog12/xhaier%E6%8E%A7%E5%88%B6%E5%8F%B0%E6%8E%A5%E5%85%A5.PNG">
+<meta property="article:published_time" content="2020-08-20T00:47:05.000Z">
+<meta property="article:modified_time" content="2020-09-21T08:08:20.140Z">
+<meta property="article:author" content="AJINGPC">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="数据库">
+<meta property="article:tag" content="DAS">
+<meta property="article:tag" content="DBGateway">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://jpc.github.io/blog12/%E4%B8%89%E7%A7%8D%E6%8E%A5%E5%85%A5%E6%96%B9%E5%BC%8F.PNG">
+
+<link rel="canonical" href="https://jpc.github.io/blog12.html">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>MySQL数据库接入阿里云DAS控制台和XHaier控制台 | Jing's Blog</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Jing's Blog</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">Jing Pengchong</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://jpc.github.io/blog12.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="AJINGPC">
+      <meta itemprop="description" content="生活很苦闷，但跑起来就有风。">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Jing's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          MySQL数据库接入阿里云DAS控制台和XHaier控制台
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-20 08:47:05" itemprop="dateCreated datePublished" datetime="2020-08-20T08:47:05+08:00">2020-08-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-09-21 16:08:20" itemprop="dateModified" datetime="2020-09-21T16:08:20+08:00">2020-09-21</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/" itemprop="url" rel="index"><span itemprop="name">MySQL</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/" itemprop="url" rel="index"><span itemprop="name">study</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/%E9%98%BF%E9%87%8C%E4%BA%91DAS%E6%8E%A7%E5%88%B6%E5%8F%B0/" itemprop="url" rel="index"><span itemprop="name">阿里云DAS控制台</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/MySQL/study/%E9%98%BF%E9%87%8C%E4%BA%91DAS%E6%8E%A7%E5%88%B6%E5%8F%B0/XHaier%E6%8E%A7%E5%88%B6%E5%8F%B0/" itemprop="url" rel="index"><span itemprop="name">XHaier控制台</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>为了通过页面进行可视化的运维，需要将数据库接入到阿里云DAS控制台和XHaier控制台。</p>
+<h3 id="接入阿里云DAS控制台"><a href="#接入阿里云DAS控制台" class="headerlink" title="接入阿里云DAS控制台"></a>接入阿里云DAS控制台</h3><p>首先登录阿里云账号，侧边栏选择“数据库自治服务DAS”，然后在热荐功能区点击“快速实例接入”。这里有三种实例：阿里云数据库、阿里云ECS自建数据库(在阿里云服务器上自建的数据库)、其他自建或其他云厂商数据库。三种数据库实例的接入方式参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/84830.html?spm=a2c4g.11186623.6.561.7a285280lKsmTk">阿里云官方文档</a>。</p>
+<h4 id="选择接入方式"><a href="#选择接入方式" class="headerlink" title="选择接入方式"></a>选择接入方式</h4><p>点击“其他自建或其他云厂商数据库”后会发现有三种接入方式：</p>
+<p><img src="blog12/%E4%B8%89%E7%A7%8D%E6%8E%A5%E5%85%A5%E6%96%B9%E5%BC%8F.PNG"></p>
+<ul>
+<li>方式一需要服务器可以被公网所访问，但可以被公网访问的服务器是不安全的，很少使用这种服务器，因此也就一般不使用这种接入方式；</li>
+<li>方式二是在一台服务器部署DAS网关，其他部署数据库的服务器需要与部署DAS网关的服务器网络互通，但这种方式与方式一都不支持主机监控指标、请求诊断、全量请求分析、请求响应时间以及安全审计等功能；</li>
+<li>方式三是在每台服务器上都部署DAS网关，现在大多使用这种方式接入，这也是阿里云官方推荐的方式。</li>
+</ul>
+<h4 id="部署DAS网关（DBGateway）"><a href="#部署DAS网关（DBGateway）" class="headerlink" title="部署DAS网关（DBGateway）"></a>部署DAS网关（DBGateway）</h4><p>点击方式三，选择网络域，点击“生成部署命令”：</p>
+<p><img src="blog12/%E9%80%89%E6%8B%A9%E7%BD%91%E7%BB%9C%E7%B1%BB%E5%9E%8B.PNG"></p>
+<p>登录到数据库所在服务器，执行下面的部署命令：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">在opt目录下操作</span></span><br><span class="line">cd /opt         </span><br><span class="line"><span class="meta">#</span><span class="bash">执行部署命令，下载install-dbgateway</span></span><br><span class="line">sudo wget -O install-dbgateway http://hdm-dbgateway-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/DBGateway/install-dbgateway &amp;&amp; sudo /bin/bash install-dbgateway --id idc_zqSS2oMpeyKubndD --token 3E24C01713C83B7328F9A2F4C411078DC820E63FAFBC058F6635FAC5B0B4B7F2 --endpoint master-hdm-cn-hangzhou.aliyuncs.com --region default --native</span><br></pre></td></tr></table></figure>
+
+<p>若直接执行部署命令失败，说明该服务器不可以访问外网，需要通过搭建代理服务器 <a target="_blank" rel="noopener" href="http://www.squid-cache.org/"><strong>Squid</strong></a> 进行访问。代理服务器10.133.0.53:3128已搭建完成，只需要执行下面的命令即可：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">在opt目录下操作</span></span><br><span class="line">cd /opt</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看dbgateway进程是否存在</span></span><br><span class="line">ps -ef|grep dbgateway  </span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 增加代理</span></span><br><span class="line">echo  &quot;</span><br><span class="line">http_proxy=10.133.0.53:3128</span><br><span class="line">https_proxy=10.133.0.53:3128</span><br><span class="line">ssl_proxy=10.133.0.53:3128</span><br><span class="line">tls_proxy=10.133.0.53:3128</span><br><span class="line">ftp_proxy=10.133.0.53:3128</span><br><span class="line">tcp_proxy=10.133.0.53:3128</span><br><span class="line">export http_proxy</span><br><span class="line">export https_proxy</span><br><span class="line">export ssl_proxy</span><br><span class="line">export ftp_proxy</span><br><span class="line">export tcp_proxy</span><br><span class="line">export tls_proxy&quot; &gt;&gt; /etc/profile ;  source /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改wget代理配置文件</span></span><br><span class="line">echo &quot;</span><br><span class="line">https_proxy=http://10.133.0.53:3128/</span><br><span class="line">http_proxy=http://10.133.0.53:3128/</span><br><span class="line">ftp_proxy=http://10.133.0.53:3128/&quot; &gt;&gt; /etc/wgetrc ;  source /etc/wgetrc</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 下载install-dbgateway</span></span><br><span class="line">sudo wget -O install-dbgateway http://hdm-dbgateway-cn-hangzhou.oss-cn-hangzhou.aliyuncs.com/DBGateway/install-dbgateway &amp;&amp; sudo /bin/bash install-dbgateway --id idc_zqSS2oMpeyKubndD --token 3E24C01713C83B7328F9A2F4C411078DC820E63FAFBC058F6635FAC5B0B4B7F2 --endpoint master-hdm-cn-hangzhou.aliyuncs.com --region default --native</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改install-dbgateway</span></span><br><span class="line">注释以下代码</span><br><span class="line">curl -v --connect-timeout 3 --silent $&#123;endpoint&#125;:80 --output -</span><br><span class="line">if [ $? != 0 -a $? != 52 ]; then</span><br><span class="line">       echo &quot;Error! Can not connect to $&#123;endpoint&#125;:80, please check your network environment.&quot;</span><br><span class="line">       exit 1</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 完成接入</span></span><br><span class="line">sudo /bin/bash install-dbgateway --id idc_zqSS2oMpeyKubndD --token 3E24C01713C83B7328F9A2F4C411078DC820E63FAFBC058F6635FAC5B0B4B7F2 --endpoint master-hdm-cn-hangzhou.aliyuncs.com --region default --native</span><br><span class="line"></span><br><span class="line">-----------------------------------------------------------------------------------------</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 配置代理</span></span><br><span class="line">echo  &quot;</span><br><span class="line">http_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">https_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">ssl_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">tls_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">ftp_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">tcp_proxy=http://qd-aliyun-proxy.haier.net:3128</span><br><span class="line">export http_proxy</span><br><span class="line">export https_proxy</span><br><span class="line">export ssl_proxy</span><br><span class="line">export ftp_proxy</span><br><span class="line">export tcp_proxy</span><br><span class="line">export tls_proxy&quot; &gt;&gt; /etc/profile ;  source /etc/profile</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 配置wget代理</span></span><br><span class="line">echo &quot;</span><br><span class="line">https_proxy=http://qd-aliyun-proxy.haier.net:3128/</span><br><span class="line">http_proxy=http://qd-aliyun-proxy.haier.net:3128/</span><br><span class="line">ftp_proxy=http://qd-aliyun-proxy.haier.net:3128/&quot; &gt;&gt; /etc/wgetrc ;  source /etc/wgetrc</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 下载install-dbgateway</span></span><br><span class="line">sudo wget -O install-dbgateway http://hdm-dbgateway-cn-qingdao.vpc100-oss-cn-qingdao.aliyuncs.com/DBGateway/install-dbgateway &amp;&amp; sudo /bin/bash install-dbgateway --id vpc-m5e6olft3vnne1ug6rdcd --token 3359FC7C28FB5B29459803F85B808D6D37B16B64FB2D56F485E632868E3C5798 --endpoint master-hdm-inner.cn-qingdao.aliyuncs.com --region cn-qingdao --native</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 修改install-dbgateway</span></span><br><span class="line">注释以下代码</span><br><span class="line">curl -v --connect-timeout 3 --silent $&#123;endpoint&#125;:80 --output -</span><br><span class="line">if [ $? != 0 -a $? != 52 ]; then</span><br><span class="line">       echo &quot;Error! Can not connect to $&#123;endpoint&#125;:80, please check your network environment.&quot;</span><br><span class="line">       exit 1</span><br><span class="line">fi</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装完成</span></span><br><span class="line">sudo /bin/bash install-dbgateway --id vpc-m5e6olft3vnne1ug6rdcd --token 3359FC7C28FB5B29459803F85B808D6D37B16B64FB2D56F485E632868E3C5798 --endpoint master-hdm-inner.cn-qingdao.aliyuncs.com --region cn-qingdao --native</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看dbgateway进程是否启动，若出现<span class="string">&quot;...dbgateway-manager --do keeper&quot;</span>进程说明接入成功</span></span><br><span class="line">ps -ef|grep dbgateway</span><br></pre></td></tr></table></figure>
+
+<p>判断 DBGateway 进程是否存活,running是存活，dead是死亡</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/dbgateway/bin/dbgateway-manager -d status</span><br></pre></td></tr></table></figure>
+
+<p>重启DBGateway 进程</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/dbgateway/bin/dbgateway-manager -d restart</span><br></pre></td></tr></table></figure>
+
+<p>启动DBGateway 进程</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/opt/dbgateway/bin/dbgateway-manager -d start</span><br></pre></td></tr></table></figure>
+
+<p><strong>问题：</strong>安装DBGateway后，服务器信息可以在“DBGateway管理”界面显示，但是在“实例监控”界面找不到</p>
+<p>查看日志信息报错：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@hrsyjzdb ~]# cat /opt/dbgateway/log/dbgateway.log</span><br><span class="line">2020-09-18 08:58:14: [Error] Manage:103 Got signal:terminated</span><br><span class="line">2020-09-18 08:58:14: [Error] LastWords:160 report kill event failed: &lt;nil&gt;</span><br><span class="line">2020-09-18 09:06:05: [Error] Manage:103 Got signal:terminated</span><br><span class="line">2020-09-18 09:06:05: [Error] LastWords:160 report kill event failed: &lt;nil&gt;</span><br><span class="line">2020-09-18 09:07:05: [Error] Manage:103 Got signal:terminated</span><br><span class="line">2020-09-18 09:07:06: [Error] LastWords:160 report kill event failed: &lt;nil&gt;</span><br><span class="line">2020-09-18 10:31:06: [Error] Manage:103 Got signal:terminated</span><br><span class="line">2020-09-18 10:31:06: [Error] LastWords:160 report kill event failed: &lt;nil&gt;</span><br></pre></td></tr></table></figure>
+
+<p>执行命令测试本地3306端口是否开放：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">telnet  127.0.0.1 3306</span><br></pre></td></tr></table></figure>
+
+<p>连接超时，说明没有开放。下面将本地3306端口开放，详见<a target="_blank" rel="noopener" href="https://mino-yn.github.io/blog/2019/11/14/linux-firewall/">博客</a>：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iptables -I INPUT -s 10.135.12.176 -p tcp --dport 3306 -j ACCEPT</span><br></pre></td></tr></table></figure>
+
+<h4 id="完善数据库信息"><a href="#完善数据库信息" class="headerlink" title="完善数据库信息"></a>完善数据库信息</h4><p>在侧边栏选择“DBGateway管理”，修改别名：数据库类型(dev、prd等)_项目名_备注</p>
+<p>在侧边栏选择“实例监控”，将添加的数据库授权给hdm账号</p>
+<p>在侧边栏选择“请求分析”，开启慢日志、全量请求</p>
+<p>在侧边栏选择“集群管理”，将数据库添加到对应集群，可以通过集群来管理数据库</p>
+<h3 id="接入XHaier控制台"><a href="#接入XHaier控制台" class="headerlink" title="接入XHaier控制台"></a>接入XHaier控制台</h3><h4 id="安装mysqld-exporter"><a href="#安装mysqld-exporter" class="headerlink" title="安装mysqld_exporter"></a>安装mysqld_exporter</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 下载安装包，若无/data目录就创建一个</span></span><br><span class="line">cd /data</span><br><span class="line">wget https://mino-yn.oss-cn-qingdao.aliyuncs.com/mysqld_exporter-0.12.1.linux-amd64.tar.gz</span><br><span class="line">tar -xzf mysqld_exporter-0.12.1.linux-amd64.tar.gz</span><br><span class="line">cd mysqld_exporter-0.12.1.linux-amd64</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 编辑配置文件，修改用户名、密码、ip、端口号</span></span><br><span class="line">vi .my.cnf</span><br><span class="line">[client]</span><br><span class="line">user=hdm</span><br><span class="line">password=Hdm@123!</span><br><span class="line">host=10.133.0.51</span><br><span class="line">port=3306</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 启动</span></span><br><span class="line">./mysqld_exporter --config.my-cnf=/data/mysqld_exporter-0.12.1.linux-amd64/.my.cnf &amp;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 检测</span></span><br><span class="line">ps -ef | grep mysqld_exporter</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 打开防火墙端口：9104</span></span><br><span class="line">firewall-cmd --zone=public --add-port=9104/tcp --permanent</span><br><span class="line">firewall-cmd --reload  </span><br><span class="line">firewall-cmd --zone=public --list-ports</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 测试</span></span><br><span class="line">10.133.0.51:9104</span><br></pre></td></tr></table></figure>
+
+<h4 id="注册-consul"><a href="#注册-consul" class="headerlink" title="注册 consul"></a>注册 consul</h4><p>使用<a target="_blank" rel="noopener" href="https://www.postman.com/downloads/">Postman</a></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">PUT http://10.138.16.192:8500/v1/agent/service/register</span><br><span class="line">&#123;</span><br><span class="line">    &quot;id&quot;:&quot;mysql_10.133.0.51_3306&quot;,</span><br><span class="line">    &quot;name&quot;:&quot;mysql&quot;,</span><br><span class="line">    &quot;address&quot;:&quot;10.133.0.51&quot;,</span><br><span class="line">    &quot;port&quot;:9104,</span><br><span class="line">    &quot;tags&quot;:[</span><br><span class="line">        &quot;cluster=QD&quot;,</span><br><span class="line">        &quot;project=TDDS&quot;,</span><br><span class="line">        &quot;instance=10.133.0.51:3306&quot;,</span><br><span class="line">        &quot;host=10.133.0.51&quot;,</span><br><span class="line">        &quot;port=3306&quot;,</span><br><span class="line">        &quot;env=prd&quot;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 查看</span></span><br><span class="line">GET http://10.138.16.192:8500/v1/catalog/service/mysql</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 注销</span></span><br><span class="line">PUT http://10.138.16.192:8500/v1/agent/service/deregister/mysql_10.133.0.51_3306</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Prometheus</span></span><br><span class="line">http://10.138.16.192:9099/targets</span><br></pre></td></tr></table></figure>
+
+<h4 id="接入XHaier控制台-1"><a href="#接入XHaier控制台-1" class="headerlink" title="接入XHaier控制台"></a>接入XHaier控制台</h4><p>登录XHaier控制台管理员入口，选择“阿里云RDS”或“自建MySQL”，点击右上角实例接入：</p>
+<p><img src="blog12/xhaier%E6%8E%A7%E5%88%B6%E5%8F%B0%E6%8E%A5%E5%85%A5.PNG"></p>
+<p>获取CPU、内存、硬盘信息：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/cpuinfo | grep &quot;cores&quot;|uniq</span><br><span class="line">free -g</span><br><span class="line">fdisk -l | grep Disk</span><br><span class="line"><span class="meta">#</span><span class="bash">规格：8核 * 32G * 600GB</span></span><br></pre></td></tr></table></figure>
+
+<p>添加后如果运行状态是绿色对号则表明添加成功。</p>
+<h3 id="XHaier控制台一键跳转阿里云DAS控制台"><a href="#XHaier控制台一键跳转阿里云DAS控制台" class="headerlink" title="XHaier控制台一键跳转阿里云DAS控制台"></a>XHaier控制台一键跳转阿里云DAS控制台</h3><p>在阿里云DAS控制台侧边栏选择“实例监控”，点击对应实例，拷贝网址。登录10.200.17.40数据库的sre账号，选择console_db_mysql或console_db_rds选择对应的数据库将信息直接填写进去。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag"># 数据库</a>
+              <a href="/tags/DAS/" rel="tag"># DAS</a>
+              <a href="/tags/DBGateway/" rel="tag"># DBGateway</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/blog11.html" rel="prev" title="XtraBackup备份与搭建主从数据库">
+      <i class="fa fa-chevron-left"></i> XtraBackup备份与搭建主从数据库
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/blog13.html" rel="next" title="子查询与联结查询">
+      子查询与联结查询 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%85%A5%E9%98%BF%E9%87%8C%E4%BA%91DAS%E6%8E%A7%E5%88%B6%E5%8F%B0"><span class="nav-number">1.</span> <span class="nav-text">接入阿里云DAS控制台</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E6%8E%A5%E5%85%A5%E6%96%B9%E5%BC%8F"><span class="nav-number">1.1.</span> <span class="nav-text">选择接入方式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2DAS%E7%BD%91%E5%85%B3%EF%BC%88DBGateway%EF%BC%89"><span class="nav-number">1.2.</span> <span class="nav-text">部署DAS网关（DBGateway）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%8C%E5%96%84%E6%95%B0%E6%8D%AE%E5%BA%93%E4%BF%A1%E6%81%AF"><span class="nav-number">1.3.</span> <span class="nav-text">完善数据库信息</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%85%A5XHaier%E6%8E%A7%E5%88%B6%E5%8F%B0"><span class="nav-number">2.</span> <span class="nav-text">接入XHaier控制台</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%89%E8%A3%85mysqld-exporter"><span class="nav-number">2.1.</span> <span class="nav-text">安装mysqld_exporter</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B3%A8%E5%86%8C-consul"><span class="nav-number">2.2.</span> <span class="nav-text">注册 consul</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%8E%A5%E5%85%A5XHaier%E6%8E%A7%E5%88%B6%E5%8F%B0-1"><span class="nav-number">2.3.</span> <span class="nav-text">接入XHaier控制台</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#XHaier%E6%8E%A7%E5%88%B6%E5%8F%B0%E4%B8%80%E9%94%AE%E8%B7%B3%E8%BD%AC%E9%98%BF%E9%87%8C%E4%BA%91DAS%E6%8E%A7%E5%88%B6%E5%8F%B0"><span class="nav-number">3.</span> <span class="nav-text">XHaier控制台一键跳转阿里云DAS控制台</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">AJINGPC</p>
+  <div class="site-description" itemprop="description">生活很苦闷，但跑起来就有风。</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">20</span>
+        <span class="site-state-item-name">分类</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">标签</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/FoeverYoung-JPC" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;FoeverYoung-JPC" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213@qq.com" title="E-Mail → 995934213@qq.com"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="/995934213" title="QQ → 995934213"><i class="fa fa-fw fa-qq"></i>QQ</a>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">AJINGPC</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://pisces.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/jquery@3/dist/jquery.min.js"></script>
+  <script src="//cdn.jsdelivr.net/gh/fancyapps/fancybox@3/dist/jquery.fancybox.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
